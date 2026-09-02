@@ -51,7 +51,7 @@ def connection_health(connection: str, site: str | None = None) -> dict | None:
         return None
     try:
         return json.loads(raw)
-    except TypeError, ValueError:
+    except (TypeError, ValueError):
         return None
 
 
@@ -90,7 +90,10 @@ def call(
     r.lpush(bus.request_list_key(site, connection), json.dumps(request, default=str))
     popped = r.blpop(reply_to, timeout=timeout)
     if popped is None:
-        # Late replies expire on their own (REPLY_TTL), but delete defensively.
+        # Timeout path: a reply that arrives late would sit unread — it expires on
+        # its own (REPLY_TTL), but delete defensively.  (On the success path BLPOP
+        # consumes the only element and redis removes the emptied key itself, so
+        # there is nothing left to clean up.)
         r.delete(reply_to)
         raise PersistentWSTimeout(f"No reply from persistent connection '{connection}' within {timeout}s.")
 

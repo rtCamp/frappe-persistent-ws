@@ -101,7 +101,7 @@ class TestRpcPump(BridgeTestCase):
                 # The pump loops forever; give it enough time to process one
                 # message, then cancel (wait_for cancels the awaited task).
                 await asyncio.wait_for(daemon._rpc_pump(conn), timeout=2)
-            except TimeoutError:
+            except asyncio.TimeoutError:  # asyncio name: builtin alias only since 3.11 (we support 3.10)
                 pass
             finally:
                 await daemon._redis.aclose()

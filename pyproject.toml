@@ -2,7 +2,7 @@
 name = "frappe_persistent_ws"
 authors = [{ name = "rtCamp", email = "frappe@rtcamp.com" }]
 description = "Persistent outbound WebSocket connections for Frappe apps - a supervised broker daemon with named connections, Redis RPC, and event listeners."
-requires-python = ">=3.14"
+requires-python = ">=3.10"
 readme = "README.md"
 dynamic = ["version"]
 dependencies = [
@@ -23,7 +23,7 @@ frappe = ">=15.40.4,<17.0.0"
 
 [tool.ruff]
 line-length = 120
-target-version = "py314"
+target-version = "py310"
 
 exclude = [
     "**/doctype/*/boilerplate/*.py", # boilerplate are template strings, not valid python

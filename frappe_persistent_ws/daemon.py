@@ -79,21 +79,23 @@ class PersistentWSDaemon:
         from frappe_persistent_ws.registry import get_connections
 
         self._redis = bus.get_async_redis()
-        connections = get_connections()
-        if not connections:
-            self.logger.warning("persistent_ws: no connections registered — exiting")
-            return
-        self._connections = {c.name: c for c in connections}
-        self.logger.info(f"persistent_ws: starting with connections {sorted(self._connections)}")
+        try:
+            connections = get_connections()
+            if not connections:
+                self.logger.warning("persistent_ws: no connections registered — exiting")
+                return
+            self._connections = {c.name: c for c in connections}
+            self.logger.info(f"persistent_ws: starting with connections {sorted(self._connections)}")
 
-        tasks = [asyncio.ensure_future(self._control_listener())]
-        tasks += [asyncio.ensure_future(self._supervise(c)) for c in connections]
-        await self._stop.wait()
-        for task in tasks:
-            task.cancel()
-        await asyncio.gather(*tasks, return_exceptions=True)
-        await self._redis.aclose()
-        self.logger.info("persistent_ws: stopped")
+            tasks = [asyncio.ensure_future(self._control_listener())]
+            tasks += [asyncio.ensure_future(self._supervise(c)) for c in connections]
+            await self._stop.wait()
+            for task in tasks:
+                task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
+            self.logger.info("persistent_ws: stopped")
+        finally:
+            await self._redis.aclose()
 
     # ------------------------------------------------------------------ #
     # per-connection supervision
@@ -126,7 +128,7 @@ class PersistentWSDaemon:
             delay *= 0.5 + random.random()  # jitter, not crypto
             try:
                 await asyncio.wait_for(self._stop.wait(), timeout=delay)
-            except TimeoutError:
+            except asyncio.TimeoutError:  # asyncio name: builtin alias only since 3.11 (we support 3.10)
                 pass
 
     async def _run_lanes(self, conn: BasePersistentConnection) -> None:
@@ -165,7 +167,7 @@ class PersistentWSDaemon:
             _list, raw = popped
             try:
                 message = json.loads(raw)
-            except TypeError, ValueError:
+            except (TypeError, ValueError):
                 self.logger.error(f"persistent_ws[{conn.name}]: dropping malformed RPC request: {raw!r}")
                 continue
 
