@@ -15,7 +15,7 @@ jobs:
   run:
     name: Validate PR title
     if: github.event_name == 'pull_request_target' && github.event.pull_request.draft == false
-    runs-on: [self-hosted]
+    runs-on: [ubuntu-latest]
     permissions:
       pull-requests: read
       statuses: write
